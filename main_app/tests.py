@@ -138,3 +138,25 @@ class ModelsTest(TestCase):
         )
         appointments = list(Appointment.objects.order_by('date'))
         self.assertLessEqual(appointments[0].date, appointments[1].date)
+    # -------------------
+    # ✅ Cascade Delete Tests
+    # -------------------
+
+    def test_deleting_user_cascades_to_related_models(self):
+        """يتأكد أن حذف المستخدم يحذف كل ما يرتبط به"""
+        self.user.delete()
+        self.assertEqual(ServiceRequest.objects.count(), 0)
+        self.assertEqual(Appointment.objects.count(), 0)
+        self.assertEqual(Document.objects.count(), 0)
+        self.assertEqual(BankAccount.objects.count(), 0)
+
+    def test_deleting_agency_cascades_to_services(self):
+        """يتأكد أن حذف الوكالة يحذف جميع الخدمات التابعة لها"""
+        self.agency.delete()
+        self.assertEqual(Service.objects.count(), 0)
+
+    def test_deleting_service_cascades_to_requests_and_appointments(self):
+        """يتأكد أن حذف الخدمة يحذف الطلبات والمواعيد المرتبطة"""
+        self.service1.delete()
+        self.assertEqual(ServiceRequest.objects.filter(service=self.service1).count(), 0)
+        self.assertEqual(Appointment.objects.filter(service=self.service1).count(), 0)
