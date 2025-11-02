@@ -16,40 +16,34 @@ User = get_user_model()
 class ModelsTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser', password='12345', email='test@example.com')
-
         self.agency = GovernmentAgency.objects.create(
             name='Ministry of Health',
             description='Handles all health related services'
         )
-
         self.service1 = Service.objects.create(
             agency=self.agency,
             name='Medical License Renewal',
             description='Renew your medical license online',
             fee=150.00
         )
-
         self.service2 = Service.objects.create(
             agency=self.agency,
             name='Hospital Registration',
             description='Register a new hospital or clinic',
             fee=250.00
         )
-
         self.request1 = ServiceRequest.objects.create(
             user=self.user,
             service=self.service1,
             status=ServiceRequest.PENDING,
             payload={'field': 'value'}
         )
-
         self.request2 = ServiceRequest.objects.create(
             user=self.user,
             service=self.service2,
             status=ServiceRequest.APPROVED,
             payload={'field': 'another value'}
         )
-
         self.appointment = Appointment.objects.create(
             service=self.service1,
             user=self.user,
@@ -57,20 +51,18 @@ class ModelsTest(TestCase):
             time=time(10, 30),
             location='Riyadh Center'
         )
-
         self.document = Document.objects.create(
             user=self.user,
             title='National ID',
             url='http://example.com/national-id.pdf'
         )
-
         self.bank_account = BankAccount.objects.create(
             user=self.user,
             iban='SA1234567890123456789012',
             display_name='Primary Account',
             infinite_balance=True
         )
-   
+
     def test_user_create(self):
         self.assertEqual(str(self.user), 'testuser')
 
@@ -97,7 +89,7 @@ class ModelsTest(TestCase):
     def test_bank_account_create(self):
         expected_str = f"{self.user.username} - {self.bank_account.display_name}"
         self.assertEqual(str(self.bank_account), expected_str)
-   
+
     def test_service_belongs_to_agency(self):
         self.assertEqual(self.service1.agency, self.agency)
         self.assertEqual(self.service2.agency.name, 'Ministry of Health')
@@ -117,18 +109,12 @@ class ModelsTest(TestCase):
     def test_bank_account_relationships(self):
         self.assertEqual(self.bank_account.user.email, 'test@example.com')
         self.assertTrue(hasattr(self.user, 'bank_account'))
-    # -------------------
-    # ✅ Ordering Tests
-    # -------------------
 
     def test_service_request_ordering_by_creation(self):
-        """يتأكد أن الطلبات تظهر من الأحدث إلى الأقدم حسب created_at"""
         requests = list(ServiceRequest.objects.order_by('-created_at'))
         self.assertGreaterEqual(requests[0].created_at, requests[1].created_at)
 
     def test_appointments_order_by_date(self):
-        """يتأكد أن المواعيد يمكن ترتيبها تصاعديًا بالتاريخ"""
-        # نضيف موعد ثاني بوقت مختلف
         appointment2 = Appointment.objects.create(
             service=self.service2,
             user=self.user,
@@ -138,12 +124,8 @@ class ModelsTest(TestCase):
         )
         appointments = list(Appointment.objects.order_by('date'))
         self.assertLessEqual(appointments[0].date, appointments[1].date)
-    # -------------------
-    # ✅ Cascade Delete Tests
-    # -------------------
 
     def test_deleting_user_cascades_to_related_models(self):
-        """يتأكد أن حذف المستخدم يحذف كل ما يرتبط به"""
         self.user.delete()
         self.assertEqual(ServiceRequest.objects.count(), 0)
         self.assertEqual(Appointment.objects.count(), 0)
@@ -151,12 +133,11 @@ class ModelsTest(TestCase):
         self.assertEqual(BankAccount.objects.count(), 0)
 
     def test_deleting_agency_cascades_to_services(self):
-        """يتأكد أن حذف الوكالة يحذف جميع الخدمات التابعة لها"""
         self.agency.delete()
         self.assertEqual(Service.objects.count(), 0)
 
     def test_deleting_service_cascades_to_requests_and_appointments(self):
-        """يتأكد أن حذف الخدمة يحذف الطلبات والمواعيد المرتبطة"""
+        service_id = self.service1.id
         self.service1.delete()
-        self.assertEqual(ServiceRequest.objects.filter(service=self.service1).count(), 0)
-        self.assertEqual(Appointment.objects.filter(service=self.service1).count(), 0)
+        self.assertEqual(ServiceRequest.objects.filter(service_id=service_id).count(), 0)
+        self.assertEqual(Appointment.objects.filter(service_id=service_id).count(), 0)
