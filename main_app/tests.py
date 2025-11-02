@@ -15,16 +15,13 @@ User = get_user_model()
 
 class ModelsTest(TestCase):
     def setUp(self):
-        # إنشاء مستخدم تجريبي
         self.user = User.objects.create_user(username='testuser', password='12345', email='test@example.com')
 
-        # إنشاء وكالة حكومية
         self.agency = GovernmentAgency.objects.create(
             name='Ministry of Health',
             description='Handles all health related services'
         )
 
-        # إنشاء خدمتين للوكالة
         self.service1 = Service.objects.create(
             agency=self.agency,
             name='Medical License Renewal',
@@ -39,7 +36,6 @@ class ModelsTest(TestCase):
             fee=250.00
         )
 
-        # إنشاء طلبين لخدمة
         self.request1 = ServiceRequest.objects.create(
             user=self.user,
             service=self.service1,
@@ -54,7 +50,6 @@ class ModelsTest(TestCase):
             payload={'field': 'another value'}
         )
 
-        # إنشاء موعد (Appointment)
         self.appointment = Appointment.objects.create(
             service=self.service1,
             user=self.user,
@@ -63,17 +58,83 @@ class ModelsTest(TestCase):
             location='Riyadh Center'
         )
 
-        # إنشاء وثيقة (Document)
         self.document = Document.objects.create(
             user=self.user,
             title='National ID',
             url='http://example.com/national-id.pdf'
         )
 
-        # إنشاء حساب بنكي (BankAccount)
         self.bank_account = BankAccount.objects.create(
             user=self.user,
             iban='SA1234567890123456789012',
             display_name='Primary Account',
             infinite_balance=True
         )
+   
+    def test_user_create(self):
+        self.assertEqual(str(self.user), 'testuser')
+
+    def test_agency_create(self):
+        self.assertEqual(str(self.agency), 'Ministry of Health')
+
+    def test_service_create(self):
+        self.assertEqual(str(self.service1), 'Medical License Renewal')
+        self.assertEqual(str(self.service2), 'Hospital Registration')
+
+    def test_service_request_create(self):
+        expected_str1 = f"Request #{self.request1.id} - {self.service1.name}"
+        expected_str2 = f"Request #{self.request2.id} - {self.service2.name}"
+        self.assertEqual(str(self.request1), expected_str1)
+        self.assertEqual(str(self.request2), expected_str2)
+
+    def test_appointment_create(self):
+        expected_str = f"{self.service1.name} - {self.appointment.date} {self.appointment.time}"
+        self.assertEqual(str(self.appointment), expected_str)
+
+    def test_document_create(self):
+        self.assertEqual(str(self.document), 'National ID')
+
+    def test_bank_account_create(self):
+        expected_str = f"{self.user.username} - {self.bank_account.display_name}"
+        self.assertEqual(str(self.bank_account), expected_str)
+   
+    def test_service_belongs_to_agency(self):
+        self.assertEqual(self.service1.agency, self.agency)
+        self.assertEqual(self.service2.agency.name, 'Ministry of Health')
+
+    def test_service_request_relationships(self):
+        self.assertEqual(self.request1.user, self.user)
+        self.assertEqual(self.request1.service, self.service1)
+        self.assertEqual(self.request2.service.agency, self.agency)
+
+    def test_appointment_relationships(self):
+        self.assertEqual(self.appointment.user.username, 'testuser')
+        self.assertEqual(self.appointment.service.name, 'Medical License Renewal')
+
+    def test_document_relationships(self):
+        self.assertEqual(self.document.user, self.user)
+
+    def test_bank_account_relationships(self):
+        self.assertEqual(self.bank_account.user.email, 'test@example.com')
+        self.assertTrue(hasattr(self.user, 'bank_account'))
+    # -------------------
+    # ✅ Ordering Tests
+    # -------------------
+
+    def test_service_request_ordering_by_creation(self):
+        """يتأكد أن الطلبات تظهر من الأحدث إلى الأقدم حسب created_at"""
+        requests = list(ServiceRequest.objects.order_by('-created_at'))
+        self.assertGreaterEqual(requests[0].created_at, requests[1].created_at)
+
+    def test_appointments_order_by_date(self):
+        """يتأكد أن المواعيد يمكن ترتيبها تصاعديًا بالتاريخ"""
+        # نضيف موعد ثاني بوقت مختلف
+        appointment2 = Appointment.objects.create(
+            service=self.service2,
+            user=self.user,
+            date=date(2025, 2, 1),
+            time=time(9, 0),
+            location='Jeddah Center'
+        )
+        appointments = list(Appointment.objects.order_by('date'))
+        self.assertLessEqual(appointments[0].date, appointments[1].date)
