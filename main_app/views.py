@@ -25,7 +25,6 @@ class AgencyList(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-
 class ServiceList(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -42,7 +41,6 @@ class ServiceDetail(APIView):
         service = get_object_or_404(Service, pk=pk)
         serializer = ServiceSerializer(service)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 
 class ServiceRequestList(APIView):
@@ -108,7 +106,6 @@ class ServiceRequestDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -117,8 +114,16 @@ class CreateUserView(generics.CreateAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+
+        # إنشاء حساب بنكي تلقائي وفريد لكل مستخدم جديد
         iban = "SA" + str(uuid.uuid4().int)[:22]
-        BankAccount.objects.create(user=user, iban=iban)
+        BankAccount.objects.create(
+            user=user,
+            iban=iban,
+            display_name="Primary Account",
+            infinite_balance=True
+        )
+
         refresh = RefreshToken.for_user(user)
         data = {
             'refresh': str(refresh),
@@ -156,7 +161,6 @@ class VerifyUserView(APIView):
         }, status=status.HTTP_200_OK)
 
 
-
 class PayServiceRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -168,6 +172,7 @@ class PayServiceRequestView(APIView):
             service_request.save()
             return Response({"message": "Payment successful (infinite balance)."}, status=status.HTTP_200_OK)
         return Response({"error": "Insufficient funds."}, status=status.HTTP_400_BAD_REQUEST)
+
 
 from rest_framework.permissions import IsAuthenticated
 
@@ -201,6 +206,7 @@ class MyBankAccountView(APIView):
         bank_account = request.user.bank_account
         bank_account.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
