@@ -76,8 +76,20 @@ class ServiceRequestList(APIView):
 
             serializer = ServiceRequestSerializer(data=data)
             if serializer.is_valid():
-                serializer.save(user=request.user)
+                service = Service.objects.get(id=data["service_id"])
+                instance = serializer.save(user=request.user)
+
+                if "Appointment" in service.name or "Vaccination" in service.name or "Hospital" in service.name:
+                    instance.status = "UPCOMING"
+                elif "Fee" in service.name or "Passport" in service.name or "License" in service.name or "National ID" in service.name:
+                    instance.status = "APPROVED"
+                else:
+                    instance.status = "PENDING"
+
+                instance.save()
+                serializer = ServiceRequestSerializer(instance)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
+
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
@@ -115,7 +127,6 @@ class CreateUserView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # إنشاء حساب بنكي تلقائي وفريد لكل مستخدم جديد
         iban = "SA" + str(uuid.uuid4().int)[:22]
         BankAccount.objects.create(
             user=user,
