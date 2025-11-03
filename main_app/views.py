@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from .models import GovernmentAgency, Service, ServiceRequest, Appointment
+from .models import GovernmentAgency, Service, ServiceRequest, Appointment, BankAccount
 from .serializers import (
     GovernmentAgencySerializer,
     ServiceSerializer,
@@ -13,10 +13,9 @@ from .serializers import (
     AppointmentSerializer,
     UserSerializer,
 )
+import uuid
 
-# ==============================
-# 🔹 Agencies
-# ==============================
+
 class AgencyList(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -26,9 +25,7 @@ class AgencyList(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# ==============================
-# 🔹 Services
-# ==============================
+
 class ServiceList(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -47,9 +44,7 @@ class ServiceDetail(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# ==============================
-# 🔹 Service Requests (User-Specific)
-# ==============================
+
 class ServiceRequestList(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -113,9 +108,7 @@ class ServiceRequestDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# ==============================
-# 🔹 Authentication Views
-# ==============================
+
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -124,6 +117,8 @@ class CreateUserView(generics.CreateAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        iban = "SA" + str(uuid.uuid4().int)[:22]
+        BankAccount.objects.create(user=user, iban=iban)
         refresh = RefreshToken.for_user(user)
         data = {
             'refresh': str(refresh),
@@ -158,4 +153,70 @@ class VerifyUserView(APIView):
             'refresh': str(refresh),
             'access': str(refresh.access_token),
             'user': UserSerializer(user).data
+        }, status=status.HTTP_200_OK)
+
+
+
+class PayServiceRequestView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        service_request = get_object_or_404(ServiceRequest, pk=pk, user=request.user)
+        bank_account = request.user.bank_account
+        if bank_account.infinite_balance:
+            service_request.is_paid = True
+            service_request.save()
+            return Response({"message": "Payment successful (infinite balance)."}, status=status.HTTP_200_OK)
+        return Response({"error": "Insufficient funds."}, status=status.HTTP_400_BAD_REQUEST)
+
+from rest_framework.permissions import IsAuthenticated
+
+class MyBankAccountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        bank_account = request.user.bank_account
+        data = {
+            "iban": bank_account.iban,
+            "display_name": bank_account.display_name,
+            "infinite_balance": bank_account.infinite_balance
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        bank_account = request.user.bank_account
+        display_name = request.data.get("display_name", bank_account.display_name)
+        infinite_balance = request.data.get("infinite_balance", bank_account.infinite_balance)
+        bank_account.display_name = display_name
+        bank_account.infinite_balance = bool(infinite_balance)
+        bank_account.save()
+        data = {
+            "iban": bank_account.iban,
+            "display_name": bank_account.display_name,
+            "infinite_balance": bank_account.infinite_balance
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        bank_account = request.user.bank_account
+        bank_account.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+        if not old_password or not new_password:
+            return Response({"error": "old_password and new_password are required"}, status=status.HTTP_400_BAD_REQUEST)
+        user = request.user
+        if not user.check_password(old_password):
+            return Response({"error": "Invalid old password"}, status=status.HTTP_400_BAD_REQUEST)
+        user.set_password(new_password)
+        user.save()
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "refresh": str(refresh),
+            "access": str(refresh.access_token)
         }, status=status.HTTP_200_OK)
