@@ -14,6 +14,7 @@ from .serializers import (
     UserSerializer,
 )
 import uuid
+from rest_framework.permissions import IsAuthenticated
 
 
 class AgencyList(APIView):
@@ -185,8 +186,6 @@ class PayServiceRequestView(APIView):
         return Response({"error": "Insufficient funds."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-from rest_framework.permissions import IsAuthenticated
-
 class MyBankAccountView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -225,6 +224,23 @@ class MyBankAccountView(APIView):
             {"error": "No bank account found for this user."},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+    def post(self, request):
+        if hasattr(request.user, "bank_account"):
+            return Response({"error": "User already has a bank account."}, status=status.HTTP_400_BAD_REQUEST)
+        iban = "SA" + str(uuid.uuid4().int)[:22]
+        bank_account = BankAccount.objects.create(
+            user=request.user,
+            iban=iban,
+            display_name=request.data.get("display_name", "Primary Account"),
+            infinite_balance=request.data.get("infinite_balance", True)
+        )
+        data = {
+            "iban": bank_account.iban,
+            "display_name": bank_account.display_name,
+            "infinite_balance": bank_account.infinite_balance
+        }
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class ChangePasswordView(APIView):
