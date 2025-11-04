@@ -63,15 +63,26 @@ pipenv shell
 python manage.py migrate
 python manage.py runserver
 
-| Feature                        | Description                                        |
-| ------------------------------ | -------------------------------------------------- |
-| AI-based document verification | Extract data from uploaded documents using AI.     |
-| Multi-language support         | Arabic and English interface.                      |
-| Notification system            | Automatic reminders for appointments and payments. |
-| Role-based access control      | Permissions for admins and users.                  |
+---
 
-Challenges & Key Takeaways
-Designed multiple relational models with Django ORM.
-Implemented secure authentication using JWT.
-Built and tested API endpoints with Django REST Framework.
-Integrated backend with the React frontend.
+## **6. Icebox Features**
+
+| Feature | Description |
+|----------|-------------|
+| **AI-based document verification** | Extract data from uploaded documents using AI. |
+| **Multi-language support** | Arabic and English interface. |
+| **Notification system** | Automatic reminders for appointments and payments. |
+| **Role-based access control** | Permissions for admins and users. |
+
+---
+
+## **7. Challenges & Key Takeaways**
+
+- Designed multiple relational models with Django ORM.  
+- Implemented secure authentication using JWT.  
+- Built and tested API endpoints with Django REST Framework.  
+- Integrated backend with the React frontend.  
+
+---
+
+### **Developed by Lujain Al Sultan**
