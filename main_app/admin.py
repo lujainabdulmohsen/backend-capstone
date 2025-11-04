@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import GovernmentAgency, Service, BankAccount, ServiceRequest, Appointment, Document
+from .models import GovernmentAgency, Service, BankAccount, ServiceRequest, Appointment, TrafficFine
 
 @admin.register(GovernmentAgency)
 class GovernmentAgencyAdmin(admin.ModelAdmin):
@@ -32,8 +32,15 @@ class AppointmentAdmin(admin.ModelAdmin):
     search_fields = ("service__name", "user__username")
     ordering = ("-created_at",)
 
-@admin.register(Document)
-class DocumentAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "title", "created_at")
-    search_fields = ("title", "user__username")
-    ordering = ("-created_at",)
+
+
+from django.contrib import admin
+from .models import TrafficFine
+
+@admin.register(TrafficFine)
+class TrafficFineAdmin(admin.ModelAdmin):
+    list_display = ("fine_number", "user", "amount", "status", "issued_at", "due_date")
+    list_filter = ("status", "issued_at", "violation_type")
+    search_fields = ("fine_number", "user__username", "user__email", "violation_type")
+    readonly_fields = ("created_at", "updated_at")
+    date_hierarchy = "issued_at"

@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import GovernmentAgency, Service, ServiceRequest, Appointment
+from django.contrib.auth.models import User
+from .models import GovernmentAgency, Service, ServiceRequest, Appointment, TrafficFine
 
 
 class GovernmentAgencySerializer(serializers.ModelSerializer):
@@ -53,8 +54,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "service_id",
             "user",
         ]
-from django.contrib.auth.models import User
-from rest_framework import serializers
+
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -70,3 +70,9 @@ class UserSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+
+
+class TrafficFineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TrafficFine
+        fields = ["id", "fine_number", "amount", "violation_type", "issued_at", "due_date", "status", "notes"]

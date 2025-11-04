@@ -5,16 +5,18 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from .models import GovernmentAgency, Service, ServiceRequest, Appointment, BankAccount
+from .models import GovernmentAgency, Service, ServiceRequest, Appointment, BankAccount, TrafficFine
 from .serializers import (
     GovernmentAgencySerializer,
     ServiceSerializer,
     ServiceRequestSerializer,
     AppointmentSerializer,
     UserSerializer,
+    TrafficFineSerializer,
 )
 import uuid
 from rest_framework.permissions import IsAuthenticated
+from django.db import transaction
 
 
 class AgencyList(APIView):
@@ -188,6 +190,7 @@ class PayServiceRequestView(APIView):
         bank_account = request.user.bank_account
         if bank_account.infinite_balance:
             service_request.is_paid = True
+            service_request.status = "APPROVED"
             service_request.save()
             return Response({"message": "Payment successful (infinite balance)."}, status=status.HTTP_200_OK)
         return Response({"error": "Insufficient funds."}, status=status.HTTP_400_BAD_REQUEST)
@@ -268,3 +271,56 @@ class ChangePasswordView(APIView):
             "refresh": str(refresh),
             "access": str(refresh.access_token)
         }, status=status.HTTP_200_OK)
+
+
+class MyFinesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        fines = TrafficFine.objects.filter(user=request.user).exclude(status=TrafficFine.PAID).order_by("-issued_at", "-created_at")
+        serializer = TrafficFineSerializer(fines, many=True)
+        return Response({"fines": serializer.data}, status=status.HTTP_200_OK)
+
+
+class PayFinesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        data = request.data
+
+        with transaction.atomic():
+            pay_all = data.get("pay_all") or data.get("payAll")
+            fine_ids = data.get("fine_ids") or data.get("fineIds")
+
+            if pay_all:
+                fines_qs = TrafficFine.objects.filter(user=user).exclude(status=TrafficFine.PAID)
+            else:
+                if not isinstance(fine_ids, list) or not fine_ids:
+                    return Response({"detail": "fine_ids required"}, status=status.HTTP_400_BAD_REQUEST)
+                fines_qs = TrafficFine.objects.filter(user=user, id__in=fine_ids).exclude(status=TrafficFine.PAID)
+
+            if not fines_qs.exists():
+                return Response({"detail": "No matching unpaid fines found."}, status=status.HTTP_400_BAD_REQUEST)
+
+            updated_count = fines_qs.update(status=TrafficFine.PAID)
+
+            for fine in fines_qs:
+                ServiceRequest.objects.create(
+                    user=user,
+                    service=None,
+                    payload={
+                        "fine_number": fine.fine_number,
+                        "amount": str(fine.amount),
+                        "violation_type": fine.violation_type,
+                    },
+                    status="APPROVED",
+                    is_paid=True
+                )
+
+        fines = TrafficFine.objects.filter(user=user).exclude(status=TrafficFine.PAID).order_by("-issued_at", "-created_at")
+        serializer = TrafficFineSerializer(fines, many=True)
+        return Response(
+            {"detail": f"{updated_count} fine(s) marked as PAID and logged to My Requests.", "fines": serializer.data},
+            status=status.HTTP_200_OK
+        )

@@ -10,7 +10,9 @@ from .views import (
     LoginView,
     VerifyUserView,
     MyBankAccountView,
-    ChangePasswordView
+    ChangePasswordView,
+    MyFinesView,
+    PayFinesView,
 )
 
 urlpatterns = [
@@ -25,4 +27,6 @@ urlpatterns = [
     path('users/token/refresh/', VerifyUserView.as_view(), name='token_refresh'),
     path('bank-account/', MyBankAccountView.as_view(), name='my-bank-account'),
     path('users/change-password/', ChangePasswordView.as_view(), name='change-password'),
+    path('my-fines/', MyFinesView.as_view(), name='my-fines'),
+    path('pay-fines/', PayFinesView.as_view(), name='pay-fines'),
 ]

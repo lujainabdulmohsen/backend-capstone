@@ -56,15 +56,6 @@ class Appointment(models.Model):
         return f"{self.service.name} - {self.date} {self.time}"
 
 
-class Document(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="documents")
-    title = models.CharField(max_length=150)
-    url = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.title
-
 
 class BankAccount(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="bank_account")
@@ -74,3 +65,35 @@ class BankAccount(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.display_name}"
+
+from django.db import models
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class TrafficFine(models.Model):
+    PENDING = "PENDING"
+    PAID = "PAID"
+    STATUS_CHOICES = [
+        (PENDING, "Pending"),
+        (PAID, "Paid"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="traffic_fines")
+    fine_number = models.CharField(max_length=60, unique=True)  
+    amount = models.DecimalField(max_digits=10, decimal_places=2)  
+    violation_type = models.CharField(max_length=120, blank=True)  
+    issued_at = models.DateField(null=True, blank=True) 
+    due_date = models.DateField(null=True, blank=True)   
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PENDING)
+    notes = models.TextField(blank=True)  
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-issued_at", "-created_at"]
+        verbose_name = "Traffic Fine"
+        verbose_name_plural = "Traffic Fines"
+
+    def __str__(self):
+        return f"{self.fine_number} — {self.user.username} — {self.amount}"
