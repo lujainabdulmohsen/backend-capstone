@@ -54,6 +54,13 @@ class ServiceRequestList(APIView):
 
     def post(self, request):
         try:
+            bank_account = getattr(request.user, "bank_account", None)
+            if not bank_account:
+                return Response(
+                    {"error": "No bank account found. Please create one first."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             data = request.data.copy()
             service_id = data.get("service_id") or data.get("service")
             if not service_id:
