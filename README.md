@@ -83,8 +83,8 @@ Users, Agencies, Services, Service Requests, Appointments, Bank Accounts, and Tr
 | `/service-requests/` | GET, POST | List or create service requests | ✅ |
 | `/service-requests/<id>/` | GET, PUT, DELETE | Retrieve, update, or delete a request | ✅ |
 | `/service-requests/<id>/pay/` | POST | Pay for a specific service request | ✅ |
-| `/users/signup/` | POST | Register new user | ❌ |
-| `/users/login/` | POST | User login | ❌ |
+| `/users/signup/` | POST | Register new user | ✅ |
+| `/users/login/` | POST | User login | ✅ |
 | `/users/token/refresh/` | GET | Refresh user token | ✅ |
 | `/users/change-password/` | POST | Change password | ✅ |
 | `/credit-card/` | GET, POST, DELETE | Manage credit card | ✅ |
