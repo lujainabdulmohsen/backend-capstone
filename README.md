@@ -1,88 +1,123 @@
-<div align="center" style="background: linear-gradient(135deg, #002E47, #2A4628); padding: 40px 20px; border-radius: 20px; color: #ffffff;">
-  
-  <h1 style="font-size: 2.5rem; margin-bottom: 10px;">Yusr Backend</h1>
-  <h3 style="color: #CDE4DA;">Django REST API for the Yusr Government Services Assistant</h3>
-  
-</div>
+<h1 align="center" style="color:#002E47; font-size:2.5rem;">Yusr</h1>
+
+<p align="center" style="color:#2A4628; font-weight:500; font-size:1.2rem;">
+An AI-powered digital assistant that unifies government and financial services into one seamless platform.
+</p>
 
 ---
 
-## 1. Project Overview  
+## Project Overview
 
-The **Yusr Backend** provides a secure and scalable REST API for the Yusr full-stack application.  
-It manages user authentication, government agencies, services, service requests, appointments, traffic fines, and bank accounts.
-
----
-
-## 2. Tech Stack  
-
-| Layer | Tools & Frameworks |
-|-------|---------------------|
-| **Language** | Python 3.13 |
-| **Framework** | Django 5, Django REST Framework |
-| **Database** | PostgreSQL |
-| **Authentication** | JWT (SimpleJWT) |
-| **Environment Management** | pipenv, dotenv |
-| **Deployment** | Docker, docker-compose |
-| **Version Control** | Git, GitHub |
+Yusr simplifies the user's experience with public services by centralizing multiple government agencies, payment systems, and appointment scheduling into one connected platform.  
+Users can securely access services, request documents, pay fines, and manage accounts—all through one modern interface.
 
 ---
 
-## 3. User Stories  
-
-| ID | User Story | Feature Implemented |
-|----|-------------|--------------------|
-| 1 | As a user, I can create an account and log in securely. | JWT Authentication |
-| 2 | As a user, I can view available government agencies and services. | Agencies & Services |
-| 3 | As a user, I can create and track my service requests. | Service Requests |
-| 4 | As a user, I can view and pay my traffic fines. | Traffic Fines |
-| 5 | As a user, I can manage my appointments. | Appointments |
-| 6 | As a user, I can add, edit, and delete my bank account. | Bank Account |
-
----
-
-## 4. CRUD Features  
-
-| Model | Create | Read | Update | Delete |
-|--------|---------|-------|---------|---------|
-| **User** | ✅ | ✅ | ✅ | ❌ |
-| **Service Request** | ✅ | ✅ | ✅ | ✅ |
-| **Appointment** | ✅ | ✅ | ✅ | ✅ |
-| **Traffic Fine** | Admin | ✅ | ✅ | ❌ |
-| **Bank Account** | ✅ | ✅ | ✅ | ✅ |
-
----
-
-## 5. Installation & Setup  
-
-```bash
-git clone https://github.com/<your-username>/yusr-backend.git
-cd yusr-backend
-pipenv install
-pipenv shell
-python manage.py migrate
-python manage.py runserver
-
----
-
-## **6. Icebox Features**
+## Core Functionality
 
 | Feature | Description |
-|----------|-------------|
-| **AI-based document verification** | Extract data from uploaded documents using AI. |
-| **Multi-language support** | Arabic and English interface. |
-| **Notification system** | Automatic reminders for appointments and payments. |
-| **Role-based access control** | Permissions for admins and users. |
+|----------|--------------|
+| **Government Agencies** | View all available government entities and their provided services. |
+| **Services Management** | Browse, request, and view services offered by each agency. |
+| **Service Requests** | Track status of submitted requests (Pending, Processing, Approved, Rejected). |
+| **Appointments** | Schedule, view, and manage upcoming appointments. |
+| **Bank Accounts** | View, add, update, or delete your bank account. Infinite balance mode for testing. |
+| **Traffic Fines** | View and pay all pending fines directly through the platform. |
+| **Credit Card Payments** | Securely store, use, and remove credit cards for service payments. |
+| **User Authentication** | Secure signup, login, and password management via JWT. |
 
 ---
 
-## **7. Challenges & Key Takeaways**
+## User Stories
 
-- Designed multiple relational models with Django ORM.  
-- Implemented secure authentication using JWT.  
-- Built and tested API endpoints with Django REST Framework.  
-- Integrated backend with the React frontend.  
+| As a User | I Want To | So That I Can |
+|------------|------------|----------------|
+| **Sign up and log in securely** | Create an account or log in using my credentials | Access personalized services safely |
+| **View government agencies** | See all available agencies and their services | Choose which service I need |
+| **Submit a service request** | Fill out forms and submit service requests | Complete applications easily |
+| **Track my service request status** | View if it’s pending, approved, or rejected | Stay updated on my request progress |
+| **Book an appointment** | Choose a date and time for services that require attendance | Manage my visits efficiently |
+| **View and manage my bank account** | See my IBAN, update the display name, or delete it | Control my financial data |
+| **Pay traffic fines** | View pending fines and pay directly | Resolve violations easily |
+| **Add or delete credit cards** | Manage payment options | Pay for services faster |
+| **Change my password** | Update credentials securely | Protect my account access |
+| **See all my previous requests** | Access service history | Review or repeat previous actions |
 
 ---
 
-### **Developed by Lujain Al Sultan**
+## Technologies Used
+
+| Category | Technologies |
+|-----------|--------------|
+| **Backend Framework** | Django, Django REST Framework |
+| **Database** | PostgreSQL |
+| **Authentication** | JWT (SimpleJWT) |
+| **Frontend** | React (Vite) |
+| **Styling** | Custom CSS with royal blue & green palette |
+| **Environment** | Pipenv, Docker, dotenv |
+
+---
+
+## ERD Diagram
+
+<div align="center" style="background: linear-gradient(135deg, #002E47, #2A4628); padding: 30px; border-radius: 16px;">
+
+<img src="erd-diagram.png" alt="Yusr ERD Diagram" width="800" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"/>
+
+</div>
+
+<p align="center" style="color:#002E47; font-weight:600; margin-top:10px;">
+The ERD shows the relationships between all models in the backend:
+Users, Agencies, Services, Service Requests, Appointments, Bank Accounts, and Traffic Fines.
+</p>
+
+---
+
+## API Routes Table
+
+| Endpoint | Method | Description | Auth Required |
+|-----------|---------|--------------|----------------|
+| `/agencies/` | GET | List all government agencies | ✅ |
+| `/services/` | GET | List all available services | ✅ |
+| `/services/<id>/` | GET | View details of a specific service | ✅ |
+| `/service-requests/` | GET, POST | List or create service requests | ✅ |
+| `/service-requests/<id>/` | GET, PUT, DELETE | Retrieve, update, or delete a request | ✅ |
+| `/service-requests/<id>/pay/` | POST | Pay for a specific service request | ✅ |
+| `/users/signup/` | POST | Register new user | ❌ |
+| `/users/login/` | POST | User login | ❌ |
+| `/users/token/refresh/` | GET | Refresh user token | ✅ |
+| `/users/change-password/` | POST | Change password | ✅ |
+| `/credit-card/` | GET, POST, DELETE | Manage credit card | ✅ |
+| `/my-fines/` | GET | View unpaid traffic fines | ✅ |
+| `/pay-fines/` | POST | Pay all or selected fines | ✅ |
+| `/bank-account/` | GET, POST, PUT, DELETE | Manage bank account | ✅ |
+
+---
+
+## Icebox Features
+
+| Planned Feature | Description |
+|------------------|-------------|
+| **AI Chatbot Integration** | Full conversational flow for requesting services using natural language. |
+| **Notifications System** | Email and SMS alerts for service updates and fines. |
+| **Multi-language Support** | Arabic/English interface. |
+| **Payment History Dashboard** | Visual summary of transactions and payments. |
+| **Document Upload** | Support for uploading and verifying identity documents. |
+
+---
+
+## Challenges & Key Takeaways
+
+| Challenge | Takeaway |
+|------------|-----------|
+| **Complex model relationships** | Gained strong understanding of one-to-many and one-to-one relationships in Django. |
+| **Authentication flow setup** | Learned to implement and debug JWT authentication between backend and React frontend. |
+| **Database migration issues** | Improved confidence in managing PostgreSQL databases and migrations. |
+| **API connection errors** | Built skill in debugging 404/500 responses and ensuring consistent REST design. |
+| **Design consistency** | Maintained royal color palette and unified brand identity across frontend and backend. |
+
+---
+
+<p align="center" style="color:#2A4628; font-weight:600; margin-top:40px;">
+Developed by Lujain Al Sultan
+</p>
