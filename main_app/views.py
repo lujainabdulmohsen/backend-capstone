@@ -214,9 +214,17 @@ class MyBankAccountView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
     def delete(self, request):
-        bank_account = request.user.bank_account
-        bank_account.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        bank_account = getattr(request.user, "bank_account", None)
+        if bank_account:
+            bank_account.delete()
+            return Response(
+                {"message": "Bank account deleted successfully."},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        return Response(
+            {"error": "No bank account found for this user."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class ChangePasswordView(APIView):
