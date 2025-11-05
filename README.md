@@ -97,6 +97,13 @@ Testing CRUD operations using Django TestCase
 
 ---
 
+## Run with Docker
+
+1. Build the backend image:
+   ```bash
+   docker compose build
+
+---
 
 Links
 Frontend Repository: [https://github.com/lujainabdulmohsen/frontend-capstone]
