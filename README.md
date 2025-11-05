@@ -10,7 +10,8 @@ All routes are protected using JWT authentication.
 ## ERD Diagram
 Add your ERD image below:
 
-📎 [View ERD Diagram (PDF)](./assets/ERD.pdf)
+![ERD Diagram](./assets/ERD.png)
+
 
 ---
 
