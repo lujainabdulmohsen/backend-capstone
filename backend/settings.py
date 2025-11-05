@@ -7,9 +7,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 env_path = os.path.join(BASE_DIR, ".env")
 load_dotenv(dotenv_path=env_path)
-
-print("DEBUG SECRET_KEY:", os.environ.get("SECRET_KEY"))
-
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 DEBUG = True

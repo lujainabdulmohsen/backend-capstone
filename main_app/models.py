@@ -3,7 +3,6 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-
 class GovernmentAgency(models.Model):
     name = models.CharField(max_length=120, unique=True)
     description = models.TextField(blank=True)
@@ -56,20 +55,18 @@ class Appointment(models.Model):
         return f"{self.service.name} - {self.date} {self.time}"
 
 
-
-class BankAccount(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="bank_account")
-    iban = models.CharField(max_length=34, unique=True)
+# BankAccount is now representing CreditCard
+class CreditCard(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     display_name = models.CharField(max_length=100, default="Primary Account")
     infinite_balance = models.BooleanField(default=True)
+    credit_card_number = models.CharField(unique=True, max_length=16)
+    expiration_date = models.CharField(max_length=4)
+    security_code = models.IntegerField()
 
     def __str__(self):
         return f"{self.user.username} - {self.display_name}"
 
-from django.db import models
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
 
 class TrafficFine(models.Model):
     PENDING = "PENDING"

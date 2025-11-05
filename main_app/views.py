@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from .models import GovernmentAgency, Service, ServiceRequest, Appointment, BankAccount, TrafficFine
+from .models import GovernmentAgency, Service, ServiceRequest, Appointment, CreditCard, TrafficFine
 from .serializers import (
     GovernmentAgencySerializer,
     ServiceSerializer,
@@ -13,10 +13,17 @@ from .serializers import (
     AppointmentSerializer,
     UserSerializer,
     TrafficFineSerializer,
+    CreditCardSerializer
 )
 import uuid
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
+
+
+class HomeView(APIView):
+    def get(self, request):
+        content = {'message': 'Welcome to the AI assistant api home route!'}
+        return Response(content)
 
 
 class AgencyList(APIView):
@@ -56,12 +63,6 @@ class ServiceRequestList(APIView):
 
     def post(self, request):
         try:
-            bank_account = getattr(request.user, "bank_account", None)
-            if not bank_account:
-                return Response(
-                    {"error": "No bank account found. Please create one first."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
 
             data = request.data.copy()
             service_id = data.get("service_id") or data.get("service")
@@ -123,9 +124,10 @@ class ServiceRequestDetail(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
+        print("this is the function we are testing")
         instance = get_object_or_404(ServiceRequest, pk=pk, user=request.user)
         instance.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({ "success": True }, status=status.HTTP_200_OK)
 
 
 class CreateUserView(generics.CreateAPIView):
@@ -133,25 +135,21 @@ class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        try:
+            serializer = self.serializer_class(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.save()
 
-        iban = "SA" + str(uuid.uuid4().int)[:22]
-        BankAccount.objects.create(
-            user=user,
-            iban=iban,
-            display_name="Primary Account",
-            infinite_balance=True
-        )
-
-        refresh = RefreshToken.for_user(user)
-        data = {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-            'user': UserSerializer(user).data
-        }
-        return Response(data, status=status.HTTP_201_CREATED)
+            refresh = RefreshToken.for_user(user)
+            data = {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'user': UserSerializer(user).data
+            }
+            return Response(data, status=status.HTTP_201_CREATED)
+        except Exception as err:
+            print(str(err))
+            return Response({'error': 'Server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class LoginView(APIView):
@@ -170,7 +168,6 @@ class LoginView(APIView):
 
 
 class VerifyUserView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         user = User.objects.get(username=request.user.username)
@@ -186,71 +183,74 @@ class PayServiceRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        service_request = get_object_or_404(ServiceRequest, pk=pk, user=request.user)
-        bank_account = request.user.bank_account
-        if bank_account.infinite_balance:
-            service_request.is_paid = True
-            service_request.status = "APPROVED"
-            service_request.save()
-            return Response({"message": "Payment successful (infinite balance)."}, status=status.HTTP_200_OK)
-        return Response({"error": "Insufficient funds."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            card = CreditCard.objects.filter(user=request.user).first()
+            if card:
+                service_request = get_object_or_404(ServiceRequest, pk=pk, user=request.user)
+                service_request.is_paid = True
+                service_request.status = "APPROVED"
+                service_request.save()
+                return Response({"message": "Payment successful (infinite balance)."}, status=status.HTTP_200_OK)
+        except Exception as err:
+            print(str(err))
+            return Response({'error': str(err)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class MyBankAccountView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = CreditCardSerializer
 
     def get(self, request):
-        bank_account = request.user.bank_account
-        data = {
-            "iban": bank_account.iban,
-            "display_name": bank_account.display_name,
-            "infinite_balance": bank_account.infinite_balance
-        }
-        return Response(data, status=status.HTTP_200_OK)
+        try:
+            card = CreditCard.objects.filter(user=request.user).first()
+
+            if card:
+                serializer = self.serializer_class(card)
+                return Response({ "acct": serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({ "acct": None}, status=status.HTTP_200_OK)
+        except Exception as err:
+            return Response({"error": str(err)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def put(self, request):
-        bank_account = request.user.bank_account
-        display_name = request.data.get("display_name", bank_account.display_name)
-        infinite_balance = request.data.get("infinite_balance", bank_account.infinite_balance)
-        bank_account.display_name = display_name
-        bank_account.infinite_balance = bool(infinite_balance)
-        bank_account.save()
-        data = {
-            "iban": bank_account.iban,
-            "display_name": bank_account.display_name,
-            "infinite_balance": bank_account.infinite_balance
-        }
-        return Response(data, status=status.HTTP_200_OK)
+        try:
+            card = CreditCard.objects.filter(user=request.user).first()
+            serializer = self.serializer_class(card, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as err:
+            return Response({'error': str(err)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request):
-        bank_account = getattr(request.user, "bank_account", None)
-        if bank_account:
-            bank_account.delete()
-            return Response(
-                {"message": "Bank account deleted successfully."},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        return Response(
-            {"error": "No bank account found for this user."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        try:
+
+            existing_creditcard = CreditCard.objects.filter(user=request.user)
+            if existing_creditcard:
+                existing_creditcard.delete()
+                return Response({"ok": "Bank account deleted successfully."}, status=status.HTTP_200_OK)
+            return Response({ "success": True}, status=status.HTTP_200_OK)
+        except Exception as err:
+            print(str(err))
+            return Response({'error': str(err)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
     def post(self, request):
-        if hasattr(request.user, "bank_account"):
-            return Response({"error": "User already has a bank account."}, status=status.HTTP_400_BAD_REQUEST)
-        iban = "SA" + str(uuid.uuid4().int)[:22]
-        bank_account = BankAccount.objects.create(
-            user=request.user,
-            iban=iban,
-            display_name=request.data.get("display_name", "Primary Account"),
-            infinite_balance=request.data.get("infinite_balance", True)
-        )
-        data = {
-            "iban": bank_account.iban,
-            "display_name": bank_account.display_name,
-            "infinite_balance": bank_account.infinite_balance
-        }
-        return Response(data, status=status.HTTP_201_CREATED)
+        try:
+            
+            existing_creditcard = CreditCard.objects.filter(user=request.user)
+            if existing_creditcard:
+                existing_creditcard.delete()
+
+            serializer = self.serializer_class(data=request.data)
+            if serializer.is_valid():
+                serializer.save(user=request.user)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as err:
+            print(str(err))
+            return Response({"error": str(err)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ChangePasswordView(APIView):

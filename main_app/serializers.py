@@ -1,6 +1,14 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import GovernmentAgency, Service, ServiceRequest, Appointment, TrafficFine
+from .models import GovernmentAgency, Service, ServiceRequest, Appointment, TrafficFine, CreditCard
+
+class CreditCardSerializer(serializers.ModelSerializer):
+    # this will allow us to include the photo in the cat without having to query for it! Neat!
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    
+    class Meta:
+        model = CreditCard
+        fields = '__all__'
 
 
 class GovernmentAgencySerializer(serializers.ModelSerializer):

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import GovernmentAgency, Service, BankAccount, ServiceRequest, Appointment, TrafficFine
+from .models import GovernmentAgency, Service, CreditCard, ServiceRequest, Appointment, TrafficFine
 
 @admin.register(GovernmentAgency)
 class GovernmentAgencyAdmin(admin.ModelAdmin):
@@ -14,9 +14,7 @@ class ServiceAdmin(admin.ModelAdmin):
     search_fields = ("name", "agency__name")
     ordering = ("id",)
 
-@admin.register(BankAccount)
-class BankAccountAdmin(admin.ModelAdmin):
-    list_display = ("user", "iban", "display_name", "infinite_balance")
+admin.site.register(CreditCard)
 
 @admin.register(ServiceRequest)
 class ServiceRequestAdmin(admin.ModelAdmin):
